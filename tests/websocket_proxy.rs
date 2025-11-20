@@ -1,6 +1,6 @@
 use futures::{SinkExt, StreamExt};
 use hbb_common::{
-    config::{keys, Socks5Server, APP_NAME, OVERWRITE_SETTINGS},
+    config::{keys, Config, Socks5Server, APP_NAME, OVERWRITE_SETTINGS},
     socket_client,
     tcp::DynTcpStream,
     tls::{upsert_tls_cache, TlsType},
@@ -167,6 +167,7 @@ async fn proxy_round_trip(
                 "http://websocket-target.invalid"
             },
         );
+        Config::set_option("api-server-real".to_string(), "".to_string());
         socket_client::connect_tcp("websocket-target.invalid:21116", TIMEOUT)
             .await
             .unwrap()

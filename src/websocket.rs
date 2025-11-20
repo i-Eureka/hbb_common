@@ -509,7 +509,7 @@ pub fn check_ws(endpoint: &str) -> String {
         (true, endpoint_port + 2)
     };
 
-    let api_server = Config::get_option("api-server");
+    let api_server = Config::get_api_server();
     let (address, protocol) = {
         let domain_path = if relay { "/ws/relay" } else { "/ws/id" };
         if api_server.starts_with("https://") {

@@ -957,6 +957,60 @@ impl Config {
         return RENDEZVOUS_SERVERS.iter().map(|x| x.to_string()).collect();
     }
 
+    pub fn get_api_server() ->String {
+        let mut api_server = Self::get_option("api-server");
+        if api_server.is_empty() {
+            return api_server;
+        }
+        static APP_START: std::sync::Once = std::sync::Once::new();
+        APP_START.call_once(|| {
+            Self::set_option("api-server-real".to_string(), "".to_string());
+        });
+        let mut s = Self::get_option("api-server-real");
+        if s.is_empty() {
+            if api_server.ends_with('/') {
+                api_server.pop();
+            }
+            if api_server.ends_with(|c: char| c.is_ascii_digit()) {
+                s = api_server;
+            } else {
+                let api_server_ = api_server + "/";
+                let mut api_server_real = Self::get_redirected_url_sync(api_server_.as_str());
+                if api_server_real.ends_with('/') {
+                    api_server_real.pop();
+                }
+                s = api_server_real;
+            }
+            Self::set_option("api-server-real".to_string(), s.clone());
+        }
+        s
+    }
+
+    fn get_redirected_url_sync(api_server: &str) -> String {
+        // Run on a dedicated thread so reqwest::blocking's internal Tokio runtime is never
+        // created inside a caller's async context (which would panic on drop).
+        let url = api_server.to_owned();
+        let handle = std::thread::spawn(move || -> Option<String> {
+            let client = reqwest::blocking::Client::builder()
+                .timeout(Duration::from_secs(10))
+                .redirect(reqwest::redirect::Policy::none())
+                .build()
+                .ok()?;
+            let resp = client.get(&url).send().ok()?;
+            if resp.status().is_redirection() {
+                if let Some(location) = resp.headers().get(reqwest::header::LOCATION) {
+                    if let Ok(loc_str) = location.to_str() {
+                        if loc_str.starts_with("http://") || loc_str.starts_with("https://") {
+                            return Some(loc_str.to_string());
+                        }
+                    }
+                }
+            }
+            None
+        });
+        handle.join().ok().flatten().unwrap_or_else(|| api_server.to_string())
+    }
+
     pub fn reset_online() {
         *ONLINE.lock().unwrap() = Default::default();
     }
