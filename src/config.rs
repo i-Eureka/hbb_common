@@ -1078,12 +1078,10 @@ impl Config {
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     fn gen_id() -> Option<String> {
-        let hostname_as_id = BUILTIN_SETTINGS
-            .read()
-            .unwrap()
-            .get(keys::OPTION_ALLOW_HOSTNAME_AS_ID)
-            .map(|v| option2bool(keys::OPTION_ALLOW_HOSTNAME_AS_ID, v))
-            .unwrap_or(false);
+        let hostname_as_id = option2bool(
+            keys::OPTION_ALLOW_HOSTNAME_AS_ID,
+            &get_builtin_or_option(keys::OPTION_ALLOW_HOSTNAME_AS_ID),
+        );
         if hostname_as_id {
             match whoami::fallible::hostname() {
                 Ok(h) => Some(h.replace(" ", "-")),
@@ -1216,39 +1214,19 @@ impl Config {
     }
 
     pub fn no_register_device() -> bool {
-        BUILTIN_SETTINGS
-            .read()
-            .unwrap()
-            .get(keys::OPTION_REGISTER_DEVICE)
-            .map(|v| v == "N")
-            .unwrap_or(false)
+        get_builtin_or_option(keys::OPTION_REGISTER_DEVICE) == "N"
     }
 
     pub fn is_disable_change_permanent_password() -> bool {
-        BUILTIN_SETTINGS
-            .read()
-            .unwrap()
-            .get(keys::OPTION_DISABLE_CHANGE_PERMANENT_PASSWORD)
-            .map(|v| v == "Y")
-            .unwrap_or(false)
+        get_builtin_or_option(keys::OPTION_DISABLE_CHANGE_PERMANENT_PASSWORD) == "Y"
     }
 
     pub fn is_disable_change_id() -> bool {
-        BUILTIN_SETTINGS
-            .read()
-            .unwrap()
-            .get(keys::OPTION_DISABLE_CHANGE_ID)
-            .map(|v| v == "Y")
-            .unwrap_or(false)
+        get_builtin_or_option(keys::OPTION_DISABLE_CHANGE_ID) == "Y"
     }
 
     pub fn is_disable_unlock_pin() -> bool {
-        BUILTIN_SETTINGS
-            .read()
-            .unwrap()
-            .get(keys::OPTION_DISABLE_UNLOCK_PIN)
-            .map(|v| v == "Y")
-            .unwrap_or(false)
+        get_builtin_or_option(keys::OPTION_DISABLE_UNLOCK_PIN) == "Y"
     }
 
     pub fn get_id() -> String {
@@ -2807,6 +2785,17 @@ fn get_or(
         .cloned()
 }
 
+/// Look up a built-in option. Priority: BUILTIN_SETTINGS > Config::get_option.
+#[inline]
+fn get_builtin_or_option(key: &str) -> String {
+    BUILTIN_SETTINGS
+        .read()
+        .unwrap()
+        .get(key)
+        .cloned()
+        .unwrap_or_else(|| Config::get_option(key))
+}
+
 #[inline]
 fn is_option_can_save(
     overwrite: &RwLock<HashMap<String, String>>,
@@ -2824,11 +2813,13 @@ fn is_option_can_save(
 
 #[inline]
 pub fn is_incoming_only() -> bool {
-    HARD_SETTINGS
+    let value = HARD_SETTINGS
         .read()
         .unwrap()
         .get("conn-type")
-        .map_or(false, |x| x == ("incoming"))
+        .cloned()
+        .unwrap_or_else(|| Config::get_option("conn-type"));
+    value == "incoming"
 }
 
 #[inline]
@@ -2842,11 +2833,13 @@ pub fn is_outgoing_only() -> bool {
 
 #[inline]
 fn is_some_hard_opton(name: &str) -> bool {
-    HARD_SETTINGS
+    let value = HARD_SETTINGS
         .read()
         .unwrap()
         .get(name)
-        .map_or(false, |x| x == ("Y"))
+        .cloned()
+        .unwrap_or_else(|| Config::get_option(name));
+    value == "Y"
 }
 
 #[inline]
