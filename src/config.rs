@@ -118,8 +118,8 @@ const CHARS: &[char] = &[
     'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-pub const RENDEZVOUS_SERVERS: &[&str] = &["rustdesk.shuangqingtech.com"];
-pub const RS_PUB_KEY: &str = "CtQ3yjQEVuTIVP7tVt4vRS3HJl0RfSLYrwPA8vpU6rw=";
+pub const RENDEZVOUS_SERVERS: &[&str] = &["rd.ik.600099.xyz"];
+pub const RS_PUB_KEY: &str = "pF9YmjcK5QDlSz0YtxCVLIGjoXZ07aAJZGqzs2yq17c=";
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
@@ -966,7 +966,7 @@ impl Config {
         if api_server.is_empty() {
             #[cfg(not(test))]
             {
-                api_server = "https://rustdesk.shuangqingtech.com:8443".to_string();
+                api_server = "https://rd.ik.600099.xyz:2053".to_string();
             }
             return api_server;
         }
